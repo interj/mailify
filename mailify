@@ -1,0 +1,98 @@
+#!/bin/sh
+
+# Default values
+subject="MAIL REPORT"
+merge_stderr=''
+dump_file=`mktemp`
+boundary="gc0p4Jq0M2Yt08jU534c0pWHATACRAP"
+
+# Function to display usage
+usage() {
+    echo "Usage: $0 -e|--email EMAIL [-s|--source-email SOURCE_EMAIL] [-S|--subject SUBJECT] [-m|--merge-stderr] [-h|--help] [--] COMMAND"
+    echo "       -e, --email          Email address to send the mail to."
+    echo "       -s, --source-email   Email address to send the mail from. Defaults to --email if not provided."
+    echo "       -S, --subject        Subject of the email. Defaults to 'MAIL REPORT: --COMMAND'"
+    echo "       -m, --merge-stderr   Merge stderr with stdout in execution of the COMMAND."
+    echo "       -h, --help           Display this usage message."
+    exit 1
+}
+
+# Parse command line options
+OPTS=`getopt -o e:s:S:h --long email:,source-email:,subject:,merge-stderr,help -n 'parse-options' -- "$@"`
+
+# Check for getopt error
+if [ $? != 0 ]; then
+    echo "Failed parsing options." >&2
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+# Process options
+while true; do
+    case "$1" in
+        -e | --email )
+            email="$2"
+            shift 2
+            ;;
+        -s | --source-email )
+            source_email="$2"
+            shift 2
+            ;;
+        -S | --subject )
+            subject="$2"
+            shift 2
+            ;;
+        -m | --merge-stderr )
+            merge_stderr=true
+            shift
+            ;;
+        -h | --help )
+            usage
+            ;;
+        -- )
+            shift
+            break
+            ;;
+    esac
+done
+
+# Check for required email
+if [ -z "$email" ]; then
+    echo "Email is required!"
+    usage
+fi
+
+# Set source_email if not provided
+if [ -z "$source_email" ]; then
+    source_email="$email"
+fi
+
+if [ "$subject" = "MAIL REPORT" ]; then
+    subject="$subject: $@"
+fi
+
+### Set email headers ###
+(
+    echo "From: ${email}"
+    echo "To: ${email}"
+    echo "Subject: ${subject}"
+    echo 'Content-Type: multipart/alternative; boundary="'$boundary'"'
+    echo "Content-Type: text"
+    echo "MIME-Version: 1.0"
+    echo
+    echo "--$boundary"
+    echo 'Content-Type: text/plain; charset="utf-8"'
+    echo "Content-Transfer-Encoding: quoted-printable"
+    echo "Content-Disposition: inline"
+) > "$dump_file"
+
+
+eval $@ ${merge_stderr:+2>&1} >> "$dump_file"
+
+### Send report ###
+#sendmail -t < $dump_file
+cat < $dump_file
+echo "--$boundary" >> "$dump_file"
+
+rm "$dump_file"
