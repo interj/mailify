@@ -89,6 +89,7 @@ fi
     echo "Content-Disposition: inline"
 ) > "$dump_file"
 
+echo "$@: " >> "$dump_file"
 
 eval $@ ${merge_stderr:+2>&1} >> "$dump_file"
 
