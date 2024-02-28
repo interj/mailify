@@ -18,7 +18,7 @@ usage() {
 }
 
 # Parse command line options
-OPTS=`getopt -o e:s:S:h --long email:,source-email:,subject:,merge-stderr,help -n 'parse-options' -- "$@"`
+OPTS=`getopt -o e:s:S:mh --long email:,source-email:,subject:,merge-stderr,help -n 'parse-options' -- "$@"`
 
 # Check for getopt error
 if [ $? != 0 ]; then
