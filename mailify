@@ -91,10 +91,14 @@ fi
 
 echo "$@: " >> "$dump_file"
 
-eval $@ ${merge_stderr:+2>&1} >> "$dump_file"
+extra_tmp=`mktemp`
+eval $@ ${merge_stderr:+2>&1} > "$extra_tmp"
 
-### Send report ###
-sendmail -t < $dump_file
-echo "--$boundary" >> "$dump_file"
+if [ -s "$extra_tmp" ]; then
+    cat "$extra_tmp" >> "$dump_file"
+    ### Send report ###
+    sendmail -t < $dump_file
+    echo "--$boundary" >> "$dump_file"
+fi
 
 rm "$dump_file"
